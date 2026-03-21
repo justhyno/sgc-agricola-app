@@ -8,6 +8,8 @@ import 'features/loja/selecionar_loja_screen.dart';
 import 'features/pdv/pdv_screen.dart';
 import 'features/stock/stock_screen.dart';
 import 'features/alertas/alertas_screen.dart';
+import 'features/historico/historico_screen.dart';
+import 'features/impressora/impressora_screen.dart';
 import 'shared/theme.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -20,14 +22,16 @@ final _routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/loja',  builder: (_, __) => const SelecionarLojaScreen()),
+      GoRoute(path: '/login',      builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/loja',       builder: (_, __) => const SelecionarLojaScreen()),
+      GoRoute(path: '/impressora', builder: (_, __) => const ImpressoraScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => _MainShell(shell: shell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: '/',        builder: (_, __) => const PdvScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/stock',   builder: (_, __) => const StockScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/alertas', builder: (_, __) => const AlertasScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/',          builder: (_, __) => const PdvScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/stock',     builder: (_, __) => const StockScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/alertas',   builder: (_, __) => const AlertasScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/historico', builder: (_, __) => const HistoricoScreen())]),
         ],
       ),
     ],
@@ -79,6 +83,7 @@ class _MainShell extends ConsumerWidget {
           NavigationDestination(icon: Icon(Icons.point_of_sale), label: 'PDV'),
           NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'Stock'),
           NavigationDestination(icon: Icon(Icons.warning_amber_outlined), label: 'Alertas'),
+          NavigationDestination(icon: Icon(Icons.history), label: 'Histórico'),
         ],
       ),
     );

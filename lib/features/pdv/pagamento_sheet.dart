@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/pdv_provider.dart';
 import '../../core/providers/sync_provider.dart';
+import '../../core/services/impressora_service.dart';
 import '../../shared/theme.dart';
 
 const _metodos = [
@@ -46,6 +48,19 @@ class _PagamentoSheetState extends ConsumerState<PagamentoSheet> {
     }
 
     setState(() => _confirmando = true);
+
+    // Capturar dados do carrinho ANTES de finalizar (cart é limpo após)
+    final pdvState  = ref.read(pdvProvider);
+    final carrinho  = List<ItemCarrinho>.from(pdvState.carrinho);
+    final cliente   = pdvState.clienteNome;
+    final total     = pdvState.total;
+    final subtotal  = pdvState.subtotal;
+    final totalIva  = pdvState.totalIva;
+    final descValor = pdvState.descontoValor;
+    final descPct   = pdvState.descontoGeral;
+    final troco     = (valor - total).clamp(0.0, double.infinity);
+    final operador  = ref.read(authProvider).userName ?? '—';
+
     final pagamentos = [PagamentoItem(metodo: _metodo, valor: valor, referencia: _refCtrl.text.isNotEmpty ? _refCtrl.text : null)];
     final erro = await ref.read(pdvProvider.notifier).finalizarVenda(pagamentos);
 
@@ -59,7 +74,63 @@ class _PagamentoSheetState extends ConsumerState<PagamentoSheet> {
 
     // Tentar sincronizar em background
     ref.read(syncProvider.notifier).tentarSincronizar();
-    if (mounted) Navigator.of(context).pop(true);
+
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+
+    // Oferecer impressão se impressora ligada
+    final svc       = ImpressoraService.instance;
+    final conectado = await svc.estaConectado;
+    if (!conectado || !mounted) return;
+
+    final imprimir = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Imprimir recibo?'),
+        content: const Text('Impressora Bluetooth detectada. Deseja imprimir o recibo?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Não')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Imprimir')),
+        ],
+      ),
+    );
+
+    if (imprimir != true || !mounted) return;
+
+    final recibo = Recibo(
+      empresa:  'SGC Agrícola',
+      numVenda: '—',
+      dataHora: DateTime.now(),
+      operador: operador,
+      cliente:  cliente,
+      itens: carrinho.map((i) => ReciboItem(
+        nome:       i.nome,
+        quantidade: i.quantidade,
+        unidade:    i.unidade,
+        lote:       i.numeroLote,
+        preco:      i.precoUnitario,
+        total:      i.total,
+      )).toList(),
+      subtotal:             subtotal,
+      descontoValor:        descValor,
+      descontoPercentagem:  descPct,
+      totalIva:             totalIva,
+      total:                total,
+      pagamentos: [ReciboPagamento(
+        metodo:     _metodo,
+        valor:      valor,
+        referencia: _refCtrl.text.isNotEmpty ? _refCtrl.text : null,
+      )],
+      troco: troco,
+    );
+
+    final ok = await svc.imprimirRecibo(recibo);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok ? 'Recibo impresso!' : 'Falha ao imprimir'),
+        backgroundColor: ok ? kVerde : Colors.red.shade700,
+      ));
+    }
   }
 
   @override

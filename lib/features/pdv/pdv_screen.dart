@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/db/database.dart';
 import '../../core/providers/auth_provider.dart';
@@ -132,6 +133,11 @@ class _PdvScreenState extends ConsumerState<PdvScreen> {
       appBar: AppBar(
         title: Text(auth.lojaNome ?? 'PDV'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: 'Impressora',
+            onPressed: () => context.push('/impressora'),
+          ),
           if (!pdv.vazio)
             TextButton.icon(
               onPressed: () => ref.read(pdvProvider.notifier).limparCarrinho(),
